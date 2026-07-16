@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Merchant churn-risk dashboard">
+  <title>Merchant Pulse — Churn Risk</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow"><span></span> Merchant Pulse</p>
+        <h1>See churn risk<br><em>before it happens.</em></h1>
+        <p class="subtitle">A live decision space for the merchant relationships that need your attention now.</p>
+        <div class="hero-footer"><div class="live-dot"></div><span>Risk engine active</span><span class="score-key" aria-label="Risk scoring range">0–100 weighted score</span></div>
+      </div>
+      <div class="risk-orbit" aria-hidden="true">
+        <div class="orbit-ring ring-one"></div><div class="orbit-ring ring-two"></div><div class="orbit-core"><b>RISK</b><span>RADAR</span></div>
+        <span class="signal signal-high">High</span><span class="signal signal-medium">Watch</span><span class="signal signal-low">Healthy</span>
+      </div>
+    </header>
+
+    <section class="summary" aria-label="Risk summary">
+      <article class="summary-card total"><span>Total merchants</span><strong id="total-count">0</strong></article>
+      <article class="summary-card low"><span>Low risk</span><strong id="low-count">0</strong></article>
+      <article class="summary-card medium"><span>Medium risk</span><strong id="medium-count">0</strong></article>
+      <article class="summary-card high"><span>High risk</span><strong id="high-count">0</strong></article>
+    </section>
+
+    <section class="panel" aria-label="Merchant risk list">
+      <div class="panel-head">
+        <div>
+          <h2>Merchant health</h2>
+          <p id="result-count" class="muted"></p>
+        </div>
+        <label class="filter-label" for="risk-filter">Risk bucket
+          <select id="risk-filter">
+            <option value="All">All</option>
+            <option value="High">High</option>
+            <option value="Medium">Medium</option>
+            <option value="Low">Low</option>
+          </select>
+        </label>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Merchant</th>
+              <th scope="col">Plan</th>
+              <th scope="col">MRR</th>
+              <th scope="col">Last login</th>
+              <th scope="col">Usage, 30d</th>
+              <th scope="col">Risk</th>
+              <th scope="col"><button id="sort-risk" class="sort-button" type="button" aria-label="Sort by risk score">Score <span aria-hidden="true">↓</span></button></th>
+            </tr>
+          </thead>
+          <tbody id="merchant-body"></tbody>
+        </table>
+      </div>
+      <p id="empty-state" class="empty-state" hidden>No merchants match this filter.</p>
+    </section>
+  </main>
+  <script src="data.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
