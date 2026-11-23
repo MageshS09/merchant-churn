@@ -1,0 +1,9 @@
+{
+  "name": "merchant-churn",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Merchant churn-risk dashboard (static HTML/CSS/JS)",
+  "scripts": {
+    "test": "node --test"
+  }
+}
