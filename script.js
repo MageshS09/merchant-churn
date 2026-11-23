@@ -40,6 +40,12 @@
   let expandedId = null;
   const body = document.getElementById("merchant-body");
 
+  // Merchant fields are interpolated into innerHTML, so escape them to keep
+  // names or other text from the data source from being parsed as markup.
+  function escapeHtml(value) {
+    return String(value).replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch]);
+  }
+
   function money(value) { return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value); }
   function trend(value) { return `${value > 0 ? "+" : ""}${value}%`; }
   function scoreClass(bucket) { return bucket.toLowerCase(); }
@@ -60,9 +66,9 @@
     document.getElementById("result-count").textContent = `${visible.length} merchant${visible.length === 1 ? "" : "s"} shown`;
     document.getElementById("empty-state").hidden = visible.length !== 0;
     body.innerHTML = visible.map(m => `
-      <tr class="merchant-row ${expandedId === m.id ? "is-expanded" : ""}" data-id="${m.id}" tabindex="0" aria-expanded="${expandedId === m.id}">
-        <td data-label="Merchant"><strong>${m.name}</strong><small>Joined ${m.signupDate}</small></td>
-        <td data-label="Plan"><span class="plan ${m.plan}">${m.plan}</span></td>
+      <tr class="merchant-row ${expandedId === m.id ? "is-expanded" : ""}" data-id="${escapeHtml(m.id)}" tabindex="0" aria-expanded="${expandedId === m.id}">
+        <td data-label="Merchant"><strong>${escapeHtml(m.name)}</strong><small>Joined ${escapeHtml(m.signupDate)}</small></td>
+        <td data-label="Plan"><span class="plan ${escapeHtml(m.plan)}">${escapeHtml(m.plan)}</span></td>
         <td data-label="MRR">${money(m.mrr)}</td>
         <td data-label="Last login">${m.lastLoginDaysAgo === 0 ? "Today" : `${m.lastLoginDaysAgo}d ago`}</td>
         <td data-label="Usage, 30d" class="${m.usageTrend30d < 0 ? "negative" : "positive"}">${trend(m.usageTrend30d)}</td>
