@@ -1,44 +1,20 @@
 (() => {
-  const FACTOR_LABELS = {
-    lastLogin: "Inactivity", usageTrend: "Usage decline", paymentFailures: "Payment failures", supportTickets: "Support friction", nps: "NPS sentiment"
-  };
+  const { FACTOR_LABELS, FACTOR_MAX, scoreMerchant, factorNames } = window.MerchantScoring;
 
-  function round(value) { return Math.round(value * 10) / 10; }
-
-  function scoreMerchant(merchant) {
-    const factors = {
-      lastLogin: Math.min(30, Math.max(0, merchant.lastLoginDaysAgo)),
-      usageTrend: merchant.usageTrend30d < 0 ? Math.min(25, Math.abs(merchant.usageTrend30d) / 2) : 0,
-      paymentFailures: Math.min(20, merchant.paymentFailuresLast90d * 10),
-      supportTickets: merchant.supportTicketsLast30d > 3 ? Math.min(15, (merchant.supportTicketsLast30d - 3) * 3) : 0,
-      nps: merchant.npsScore === null ? 5 : merchant.npsScore <= 6 ? ((7 - merchant.npsScore) * 10) / 7 : 0
-    };
-    Object.keys(factors).forEach(key => { factors[key] = round(factors[key]); });
-    const score = Math.min(100, round(Object.values(factors).reduce((sum, points) => sum + points, 0)));
-    const bucket = score <= 33 ? "Low" : score <= 66 ? "Medium" : "High";
-    const ordered = Object.entries(factors).sort((a, b) => b[1] - a[1]);
-    const dominantFactors = ordered.filter(([, points]) => ordered[0][1] - points <= 5 && points > 0).map(([key]) => key);
-    const recommendation = getRecommendation(bucket, dominantFactors);
-    return { ...merchant, score, bucket, factors, dominantFactors, recommendation };
-  }
-
-  function factorNames(keys) { return keys.map(key => FACTOR_LABELS[key] === "NPS sentiment" ? "NPS sentiment" : FACTOR_LABELS[key].toLowerCase()).join(" and "); }
-
-  function getRecommendation(bucket, dominantFactors) {
-    const focus = dominantFactors.length > 1 ? ` Focus on ${factorNames(dominantFactors)}.` : "";
-    if (bucket === "Low") return "No action needed, include in quarterly review" + focus;
-    if (bucket === "Medium") return "Send proactive check-in email, monitor for 2 weeks" + focus;
-    if (dominantFactors.includes("paymentFailures")) return "Urgent: resolve billing, personal outreach within 24h" + focus;
-    if (dominantFactors.includes("usageTrend")) return "Schedule a check-in call, offer feature walkthrough" + focus;
-    if (dominantFactors.includes("supportTickets")) return "Escalate to senior support, review ticket history" + focus;
-    return "Urgent: arrange a personalized re-engagement check-in within 24h" + focus;
-  }
-
-  const scoredMerchants = merchants.map(scoreMerchant);
+  // A malformed record is skipped (and reported) instead of being shown with a NaN score.
+  const scoredMerchants = merchants.flatMap(merchant => {
+    try { return [scoreMerchant(merchant)]; } catch (error) { console.warn(error.message); return []; }
+  });
   let filter = "All";
   let descending = true;
   let expandedId = null;
   const body = document.getElementById("merchant-body");
+
+  // Merchant fields are interpolated into innerHTML, so escape them to keep
+  // names or other text from the data source from being parsed as markup.
+  function escapeHtml(value) {
+    return String(value).replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch]);
+  }
 
   function money(value) { return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value); }
   function trend(value) { return `${value > 0 ? "+" : ""}${value}%`; }
@@ -52,7 +28,7 @@
   }
 
   function breakdownRows(merchant) {
-    return Object.entries(merchant.factors).map(([key, points]) => `<div class="breakdown-row"><span>${FACTOR_LABELS[key]}</span><div class="meter"><i style="width:${(points / ({lastLogin:30,usageTrend:25,paymentFailures:20,supportTickets:15,nps:10}[key])) * 100}%"></i></div><b>${points} pts</b></div>`).join("");
+    return Object.entries(merchant.factors).map(([key, points]) => `<div class="breakdown-row"><span>${FACTOR_LABELS[key]}</span><div class="meter"><i style="width:${(points / FACTOR_MAX[key]) * 100}%"></i></div><b>${points} pts</b></div>`).join("");
   }
 
   function renderTable() {
@@ -60,9 +36,9 @@
     document.getElementById("result-count").textContent = `${visible.length} merchant${visible.length === 1 ? "" : "s"} shown`;
     document.getElementById("empty-state").hidden = visible.length !== 0;
     body.innerHTML = visible.map(m => `
-      <tr class="merchant-row ${expandedId === m.id ? "is-expanded" : ""}" data-id="${m.id}" tabindex="0" aria-expanded="${expandedId === m.id}">
-        <td data-label="Merchant"><strong>${m.name}</strong><small>Joined ${m.signupDate}</small></td>
-        <td data-label="Plan"><span class="plan ${m.plan}">${m.plan}</span></td>
+      <tr class="merchant-row ${expandedId === m.id ? "is-expanded" : ""}" data-id="${escapeHtml(m.id)}" tabindex="0" aria-expanded="${expandedId === m.id}">
+        <td data-label="Merchant"><strong>${escapeHtml(m.name)}</strong><small>Joined ${escapeHtml(m.signupDate)}</small></td>
+        <td data-label="Plan"><span class="plan ${escapeHtml(m.plan)}">${escapeHtml(m.plan)}</span></td>
         <td data-label="MRR">${money(m.mrr)}</td>
         <td data-label="Last login">${m.lastLoginDaysAgo === 0 ? "Today" : `${m.lastLoginDaysAgo}d ago`}</td>
         <td data-label="Usage, 30d" class="${m.usageTrend30d < 0 ? "negative" : "positive"}">${trend(m.usageTrend30d)}</td>
